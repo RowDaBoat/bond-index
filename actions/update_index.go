@@ -1,0 +1,146 @@
+package actions
+
+import (
+	"fmt"
+	"time"
+
+	"yarr/core"
+	"yarr/service"
+	"yarr/types"
+)
+
+type IndexUpdater struct {
+	ord          service.Ord
+	btcNameStore service.BtcNameStore
+	routingStore service.RoutingStore
+	blockStore   service.BlockStore
+	processors   []core.InscriptionProcessor
+	startBlock   uint64
+}
+
+func NewIndexUpdater(ord service.Ord, btcNameStore service.BtcNameStore, routingStore service.RoutingStore, blockStore service.BlockStore, startBlock uint64) *IndexUpdater {
+	processors := []core.InscriptionProcessor{
+		&core.BtcNameProcessor{Ord: ord, BtcNameStore: btcNameStore},
+		&core.RoutingProcessor{Ord: ord, RoutingStore: routingStore},
+	}
+
+	return &IndexUpdater{
+		ord:          ord,
+		btcNameStore: btcNameStore,
+		routingStore: routingStore,
+		blockStore:   blockStore,
+		processors:   processors,
+		startBlock:   startBlock,
+	}
+}
+
+func (iu *IndexUpdater) Update(startBlock uint64) {
+	lastIndexedBlock, err := iu.blockStore.GetLastIndexedBlock()
+	if err != nil {
+		fmt.Printf("Error getting last indexed block: %v\n", err)
+		lastIndexedBlock = 0
+	}
+
+	blockId := max(lastIndexedBlock, startBlock)
+	backoff := time.Second
+	success := false
+
+	for {
+		blockId, success = iu.processBlock(blockId)
+		if success {
+			if err := iu.blockStore.SetLastIndexedBlock(blockId); err != nil {
+				fmt.Printf("Error setting last indexed block: %v\n", err)
+			}
+		}
+		backoff = iu.waitBackoff(backoff, success)
+	}
+}
+
+func (iu *IndexUpdater) processBlock(blockId uint64) (uint64, bool) {
+	block, err := iu.getNextBlock(blockId)
+	if err != nil || block == nil {
+		return blockId, false
+	}
+
+	iu.showBlock(block)
+	iu.processInscriptions(block)
+
+	return blockId + 1, true
+}
+
+func (iu *IndexUpdater) getNextBlock(blockId uint64) (*types.Block, error) {
+	block, err := iu.ord.FetchBlock(blockId)
+	if err != nil {
+		fmt.Printf("Error fetching block %d: %v\n", blockId, err)
+		return nil, err
+	}
+
+	if block == nil || block.BestHeight-6 < blockId {
+		fmt.Printf("Reached top of chain\n")
+		return nil, nil
+	}
+
+	return block, nil
+}
+
+func (iu *IndexUpdater) showBlock(block *types.Block) {
+	bestHeight := block.BestHeight
+	start := float32(block.Height - iu.startBlock)
+	total := float32(bestHeight - iu.startBlock)
+	percentage := start / total * 100
+	percentageString := fmt.Sprintf("%.2f%%", percentage)
+	inscriptionCount := len(block.Inscriptions)
+	fmt.Printf(
+		"\033[K\rBlock %d/%d %s %d inscriptions:",
+		block.Height, bestHeight, percentageString, inscriptionCount,
+	)
+}
+
+func (iu *IndexUpdater) processInscriptions(block *types.Block) {
+	for _, inscription := range block.Inscriptions {
+		result, err := iu.processInscription(inscription)
+		if err != nil {
+			fmt.Printf("\n  Error processing inscription %s: %v\n", inscription, err)
+		} else if result != "" {
+			fmt.Printf("\n%s\n", result)
+		}
+	}
+}
+
+func (iu *IndexUpdater) waitBackoff(backoff time.Duration, wasSuccessful bool) time.Duration {
+	if wasSuccessful {
+		return time.Second
+	}
+
+	fmt.Printf("Waiting %v...\n", backoff)
+	time.Sleep(backoff)
+	backoff = min(backoff*2, time.Minute*5)
+
+	return backoff
+}
+
+func (iu *IndexUpdater) processInscription(id string) (string, error) {
+	inscription, err := iu.ord.FetchInscription(id)
+
+	if err != nil {
+		return "", err
+	}
+
+	if inscription == nil {
+		return "", nil
+	}
+
+	for _, processor := range iu.processors {
+		result, err := processor.Process(inscription)
+
+		if err != nil {
+			return "", err
+		}
+
+		if result != "" {
+			return result, nil
+		}
+	}
+
+	return "", nil
+}

@@ -1,0 +1,11 @@
+{
+    "p": "btcname",
+    "op": "routing",
+    "name": "",
+    "nostr_npub": "",
+    "nostr_relays": [
+        "wss://relay.nostr.band",
+        "wss://nos.lol",
+        "wss://relay.damus.io"
+    ]
+}
