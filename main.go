@@ -85,7 +85,7 @@ func (c *Config) printConfig() {
 	for i := 0; i < val.NumField(); i++ {
 		field := typ.Field(i).Name
 		value := val.Field(i).Interface()
-		fmt.Printf("  %-12s %v\n", field+":", value)
+		fmt.Printf("  %-14s %v\n", field+":", value)
 	}
 	fmt.Println()
 }
