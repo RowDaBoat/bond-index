@@ -14,4 +14,4 @@ COPY --from=builder /src/yarr /yarr
 RUN mkdir -p /data
 EXPOSE 80
 
-CMD ["/yarr", "--ord-url", "$ORD_URL"]
+CMD /yarr --ord-url "$ORD_URL"
