@@ -2,11 +2,14 @@ package actions
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"yarr/core"
 	"yarr/service"
 	"yarr/types"
+
+	"golang.org/x/term"
 )
 
 type IndexUpdater struct {
@@ -71,7 +74,7 @@ func (iu *IndexUpdater) processBlock(blockId uint64) (uint64, bool) {
 func (iu *IndexUpdater) getNextBlock(blockId uint64) (*types.Block, error) {
 	block, err := iu.ord.FetchBlock(blockId)
 	if err != nil {
-		fmt.Printf("Error fetching block %d: %v\n", blockId, err)
+		fmt.Printf("%v", err)
 		return nil, err
 	}
 
@@ -90,10 +93,18 @@ func (iu *IndexUpdater) showBlock(block *types.Block) {
 	percentage := start / total * 100
 	percentageString := fmt.Sprintf("%.2f%%", percentage)
 	inscriptionCount := len(block.Inscriptions)
-	fmt.Printf(
-		"\033[K\rBlock %d/%d %s %d inscriptions:",
-		block.Height, bestHeight, percentageString, inscriptionCount,
-	)
+
+	if term.IsTerminal(int(os.Stdout.Fd())) {
+		fmt.Printf(
+			"\033[K\rBlock %d/%d %s %d inscriptions:",
+			block.Height, bestHeight, percentageString, inscriptionCount,
+		)
+	} else {
+		fmt.Printf(
+			"Block %d/%d %s %d inscriptions\n",
+			block.Height, bestHeight, percentageString, inscriptionCount,
+		)
+	}
 }
 
 func (iu *IndexUpdater) processInscriptions(block *types.Block) {

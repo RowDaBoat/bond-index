@@ -86,7 +86,7 @@ func FormatError(situation string, url string, err error) error {
 }
 
 func BuildError(situation string, url string, response *resty.Response) error {
-	head := fmt.Sprintf("Error when %s:\n", situation)
+	head := fmt.Sprintf("Error when %s:", situation)
 	requestMessage := fmt.Sprintf("\tGET %s", url)
 	responseMessage := fmt.Sprintf("\tresponse: status %d", response.StatusCode())
 	return fmt.Errorf("%s\n%s\n%s", head, requestMessage, responseMessage)
