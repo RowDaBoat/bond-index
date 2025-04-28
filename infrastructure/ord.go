@@ -21,31 +21,35 @@ func NewOrd(client *resty.Client, ordUrl string) *Ord {
 }
 
 func (s *Ord) FetchInscription(id string) (*types.Inscription, error) {
+	situation := fmt.Sprintf("fetching inscription %s", id)
+	url := fmt.Sprintf("http://%s/inscription/%s", s.ordUrl, id)
 	var inscription types.Inscription
 	resp, err := s.client.R().
 		SetHeader("Accept", "application/json").
 		SetResult(&inscription).
-		Get(fmt.Sprintf("http://%s/inscription/%s", s.ordUrl, id))
+		Get(url)
 
 	switch {
 	case err != nil:
-		return nil, fmt.Errorf("error: %v", err)
+		return nil, FormatError(situation, url, err)
 	case resp.StatusCode() != 200:
-		return nil, fmt.Errorf("error: http status %d", resp.StatusCode())
+		return nil, BuildError(situation, url, resp)
 	default:
 		return &inscription, nil
 	}
 }
 
 func (s *Ord) FetchContent(inscriptionId string) (string, error) {
+	situation := fmt.Sprintf("fetching content %s", inscriptionId)
+	url := fmt.Sprintf("http://%s/content/%s", s.ordUrl, inscriptionId)
 	resp, err := s.client.R().
-		Get(fmt.Sprintf("http://%s/content/%s", s.ordUrl, inscriptionId))
+		Get(url)
 
 	switch {
 	case err != nil:
-		return "", fmt.Errorf("error: %v", err)
+		return "", FormatError(situation, url, err)
 	case resp.StatusCode() != 200:
-		return "", fmt.Errorf("error: http status %d", resp.StatusCode())
+		return "", BuildError(situation, url, resp)
 	default:
 		return string(resp.Body()), nil
 	}
@@ -57,17 +61,33 @@ func (s *Ord) HasContentType(inscription *types.Inscription, expectedContentType
 
 func (s *Ord) FetchBlock(blockId uint64) (*types.Block, error) {
 	var block types.Block
+	situation := fmt.Sprintf("fetching block %d", blockId)
+	url := fmt.Sprintf("http://%s/block/%d", s.ordUrl, blockId)
 	resp, err := s.client.R().
 		SetHeader("Accept", "application/json").
 		SetResult(&block).
-		Get(fmt.Sprintf("http://%s/block/%d", s.ordUrl, blockId))
+		Get(url)
 
 	switch {
 	case err != nil:
-		return nil, fmt.Errorf("error: %v", err)
+		return nil, FormatError(situation, url, err)
 	case resp.StatusCode() != 200:
-		return nil, fmt.Errorf("error: http status %d", resp.StatusCode())
+		return nil, BuildError(situation, url, resp)
 	default:
 		return &block, nil
 	}
+}
+
+func FormatError(situation string, url string, err error) error {
+	head := fmt.Sprintf("Error when %s:\n", situation)
+	requestMessage := fmt.Sprintf("\tGET %s", url)
+	errorMessage := fmt.Sprintf("\terror: %v", err)
+	return fmt.Errorf("%s\n%s\n%s", head, requestMessage, errorMessage)
+}
+
+func BuildError(situation string, url string, response *resty.Response) error {
+	head := fmt.Sprintf("Error when %s:\n", situation)
+	requestMessage := fmt.Sprintf("\tGET %s", url)
+	responseMessage := fmt.Sprintf("\tresponse: status %d", response.StatusCode())
+	return fmt.Errorf("%s\n%s\n%s", head, requestMessage, responseMessage)
 }
