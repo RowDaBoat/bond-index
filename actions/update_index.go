@@ -79,7 +79,7 @@ func (iu *IndexUpdater) getNextBlock(blockId uint64) (*types.Block, error) {
 	}
 
 	if block == nil || block.BestHeight-6 < blockId {
-		fmt.Printf("Reached top of chain\n")
+		fmt.Printf("Reached top of chain: %d/%d\n", blockId, block.BestHeight)
 		return nil, nil
 	}
 
