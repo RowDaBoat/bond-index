@@ -46,44 +46,53 @@ func (iu *IndexUpdater) Update(startBlock uint64) {
 
 	blockId := max(lastIndexedBlock, startBlock)
 	backoff := time.Second
-	success := false
+	var result ProcessBlockResult
 
 	for {
-		blockId, success = iu.processBlock(blockId)
-		if success {
+		blockId, result = iu.processBlock(blockId)
+		if result == Success {
 			if err := iu.blockStore.SetLastIndexedBlock(blockId); err != nil {
 				fmt.Printf("Error setting last indexed block: %v\n", err)
 			}
 		}
-		backoff = iu.waitBackoff(backoff, success)
+
+		backoff = iu.waitBackoff(backoff, result)
 	}
 }
 
-func (iu *IndexUpdater) processBlock(blockId uint64) (uint64, bool) {
-	block, err := iu.getNextBlock(blockId)
+type ProcessBlockResult int
+
+const (
+	Success ProcessBlockResult = iota
+	Backoff
+	MaxBackoff
+)
+
+func (iu *IndexUpdater) processBlock(blockId uint64) (uint64, ProcessBlockResult) {
+	block, result, err := iu.getNextBlock(blockId)
 	if err != nil || block == nil {
-		return blockId, false
+		return blockId, result
 	}
 
 	iu.showBlock(block)
 	iu.processInscriptions(block)
 
-	return blockId + 1, true
+	return blockId + 1, result
 }
 
-func (iu *IndexUpdater) getNextBlock(blockId uint64) (*types.Block, error) {
+func (iu *IndexUpdater) getNextBlock(blockId uint64) (*types.Block, ProcessBlockResult, error) {
 	block, err := iu.ord.FetchBlock(blockId)
 	if err != nil {
 		fmt.Printf("%v", err)
-		return nil, err
+		return nil, Backoff, err
 	}
 
 	if block == nil || block.BestHeight-6 < blockId {
 		fmt.Printf("Reached top of chain: %d/%d\n", blockId, block.BestHeight)
-		return nil, nil
+		return nil, MaxBackoff, nil
 	}
 
-	return block, nil
+	return block, Success, nil
 }
 
 func (iu *IndexUpdater) showBlock(block *types.Block) {
@@ -118,16 +127,20 @@ func (iu *IndexUpdater) processInscriptions(block *types.Block) {
 	}
 }
 
-func (iu *IndexUpdater) waitBackoff(backoff time.Duration, wasSuccessful bool) time.Duration {
-	if wasSuccessful {
+func (iu *IndexUpdater) waitBackoff(backoff time.Duration, result ProcessBlockResult) time.Duration {
+	if result == Success {
 		return time.Second
+	} else if result == MaxBackoff {
+		backoff = time.Minute * 5
+		fmt.Printf("Waiting %v...\n", backoff)
+		time.Sleep(backoff)
+		return backoff
+	} else {
+		fmt.Printf("Waiting %v...\n", backoff)
+		time.Sleep(backoff)
+		backoff = min(backoff*2, time.Minute*5)
+		return backoff
 	}
-
-	fmt.Printf("Waiting %v...\n", backoff)
-	time.Sleep(backoff)
-	backoff = min(backoff*2, time.Minute*5)
-
-	return backoff
 }
 
 func (iu *IndexUpdater) processInscription(id string) (string, error) {
