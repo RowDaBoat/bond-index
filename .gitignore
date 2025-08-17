@@ -14,3 +14,6 @@ yarr
 
 # env file
 .env
+
+publication
+.DS_Store

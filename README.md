@@ -6,7 +6,9 @@
 
 
 ## Overview
-`yarr` resolves [`.btc` domain names](https://docs.btcname.id/docs) such as `godofthunder.btc` or `rowboto.btc` to IPs posted in [**Nostr**](https://github.com/nostr-protocol/nostr) notes, thus effectively decentralizing domain name resolution by using Bitcoin as the domain ownership protocol and **Nostr** as the registry to find the IP to resolve each domain to.
+`yarr` decentralizes domain name resolution using **Bitcoin** as the domain registration protocol, and [**Nostr**](https://github.com/nostr-protocol/nostr) for dynamic IP address lookup.
+
+In practice, that means that `yarr` resolves [`.btc` domain names](https://docs.btcname.id/docs) such as `godofthunder.btc` or `rowboto.btc` to IP addresses posted in **Nostr** notes.
 
 
 ## How It Works
@@ -53,7 +55,7 @@ Note that the current solution allows the owner of a domain to store their priva
  User <-.                   | CoreDNS |       with relay list        '------'
         |                   |  harr   |                              .-------------.
         |                   |         | -- What's npub1xwja...'s --> |             |
-        |                   |         |   latest IP?                 | Nostr Relay |
+        |                   |         |    latest IP?                | Nostr Relay |
         |                   |         |                              |             |
         '-- DNS Response -- |         | <---- It's 121.99.9.12 ----- |             |
             121.99.9.12     '---------'                              '-------------'
