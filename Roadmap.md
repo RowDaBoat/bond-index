@@ -1,0 +1,13 @@
+- [x] Handle negative ordinals
+- [x] Store first occurrence of a BTC Name in an index
+- [x] Store last occurrence of a Address+BTCName Routing in an index
+- [x] Dockerize
+- [x] Build docker image on CI
+- [x] Properly handle reaching the end of the chain
+- [x] Build the index
+- [ ] Query nostr
+- [ ] Implement a DNS plugin
+- [ ] Handle ownership of BTC Names and Routings
+- [ ] Review error handling
+- [ ] Download a synced ordinals index
+- [ ] Use a pruned bitcion node

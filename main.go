@@ -8,7 +8,6 @@ import (
 	"yarr/actions"
 	"yarr/configuration"
 	"yarr/infrastructure"
-	"yarr/infrastructure/memory"
 	"yarr/service"
 
 	"github.com/go-resty/resty/v2"
@@ -40,12 +39,6 @@ var configOptions = []configuration.ConfigOption{
 		Description: "directory for data storage",
 	},
 	{
-		Name:        "test",
-		Default:     "false",
-		Type:        "bool",
-		Description: "run in test mode",
-	},
-	{
 		Name:        "start-ordinal",
 		Default:     "18681",
 		Type:        "uint64",
@@ -70,7 +63,6 @@ type Config struct {
 	RestListenUrl string `config:"rest-listen-url"`
 	OrdUrl        string `config:"ord-url"`
 	DataDir       string `config:"data-dir"`
-	TestMode      bool   `config:"test"`
 	StartOrdinal  uint64 `config:"start-ordinal"`
 	StartBlock    uint64 `config:"start-block"`
 	Help          bool   `config:"help"`
@@ -117,20 +109,14 @@ func buildServices(config Config) (service.Ord, service.BtcNameStore, service.Ro
 	var routingStore service.RoutingStore
 	var blockStore service.BlockStore
 
-	if config.TestMode {
-		ord = memory.NewOrd(config.DataDir)
-		btcNameStore = memory.NewBtcNameStore()
-		routingStore = memory.NewRoutingStore()
-		blockStore = memory.NewBlockStore()
-	} else {
-		client := resty.New()
-		client.SetTimeout(10 * time.Second)
-		ord = infrastructure.NewOrd(client, config.OrdUrl)
-		store := infrastructure.NewStore(config.DataDir)
-		btcNameStore = infrastructure.NewBtcNameStore(store)
-		routingStore = infrastructure.NewRoutingStore(store)
-		blockStore = infrastructure.NewBlockStore(store)
-	}
+	client := resty.New()
+	client.SetTimeout(10 * time.Second)
+	ord = infrastructure.NewOrd(client, config.OrdUrl)
+	store := infrastructure.NewStore(config.DataDir)
+	btcNameStore = infrastructure.NewBtcNameStore(store)
+	routingStore = infrastructure.NewRoutingStore(store)
+	blockStore = infrastructure.NewBlockStore(store)
+
 	return ord, btcNameStore, routingStore, blockStore
 }
 
