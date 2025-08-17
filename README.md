@@ -42,3 +42,20 @@ Currently, `yarr` is just a proof of concept. It can effectively search **domain
 Resolving to **Nostr** has not been implemented yet. To achieve this, `harr`, a plugin for [CoreDNS](https://coredns.io/), will be developed. When asked for a `.btc` domain, `harr` will query `yarr` to find the proper owner's **npub**, and then query the **Nostr** relays to find the IP to resolve the domain name to.
 
 Note that the current solution allows the owner of a domain to store their private keys in a cold wallet. Signing is only needed when transferring the **domain name inscription** or when writing a new **routing inscription**. On the other hand, the **Nostr** **nsec** will be needed each time a **resolution note** is posted.
+
+
+## Diagram
+```
+ ____                       .---------.                              .------.
+(. _.) --- DNS Request ---> |         | ---- Who's rowboto.btc? ---> |      |
+ /|\       rowboto.btc      |         |                              | yarr |
+  /\                        |         | <---- It's npub1xwja... ---- |      |
+ User <-.                   | CoreDNS |       with relay list        '------'
+        |                   |  harr   |                              .-------------.
+        |                   |         | -- What's npub1xwja...'s --> |             |
+        |                   |         |   latest IP?                 | Nostr Relay |
+        |                   |         |                              |             |
+        '-- DNS Response -- |         | <---- It's 121.99.9.12 ----- |             |
+            121.99.9.12     '---------'                              '-------------'
+```
+
