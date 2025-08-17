@@ -36,7 +36,7 @@ While Ordinals are a source of controversy, they are here to stay. Their censors
 **The resolution note**: The resolution is a note with the IP to resolve the domain name to, posted to **Nostr** by the **npub** on the **routing inscription** (either manually or via an automated script). This closes the loop of decentralized domain name resolution.
 
 
-### State of the `yarr`t
+## State of the `yarr`t
 Currently, `yarr` is just a proof of concept. It can effectively search **domain name** and **routing** inscriptions through the blockchain and store them in a database.
 
 Resolving to **Nostr** has not been implemented yet. To achieve this, `harr`, a plugin for [CoreDNS](https://coredns.io/), will be developed. When asked for a `.btc` domain, `harr` will query `yarr` to find the proper owner's **npub**, and then query the **Nostr** relays to find the IP to resolve the domain name to.
