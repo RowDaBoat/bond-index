@@ -60,4 +60,3 @@ Note that the current solution allows the owner of a domain to store their priva
         '-- DNS Response -- |         | <---- It's 121.99.9.12 ----- |             |
             121.99.9.12     '---------'                              '-------------'
 ```
-
