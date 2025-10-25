@@ -1,4 +1,4 @@
-module yarr
+module bond
 
 go 1.23.5
 

@@ -1,4 +1,4 @@
-# yarr
+# bond
 
 [![Go Version](https://img.shields.io/badge/Go-1.23.5+-blue.svg)](https://golang.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -6,14 +6,14 @@
 
 
 ## Overview
-`yarr` decentralizes domain name resolution using **Bitcoin** as the domain registration protocol, and [**Nostr**](https://github.com/nostr-protocol/nostr) for dynamic IP address lookup.
+`bond` is **Bitcoin**, **Ordinals**, and **Nostr**, into **DNS**. It decentralizes domain name resolution using **Bitcoin** and **Ordinals** as the domain registration protocol, and [**Nostr**](https://github.com/nostr-protocol/nostr) for dynamic IP address lookup.
 
-In practice, that means that `yarr` resolves [`.btc` domain names](https://docs.btcname.id/docs) such as `godofthunder.btc` or `rowboto.btc` to IP addresses posted in **Nostr** notes.
+In practice, that means that `bond` resolves [`.btc` domain names](https://docs.btcname.id/docs) such as `godoftunder.btc` or `rowboto.btc` to IP addresses posted in **Nostr** notes.
 
 
 ## How It Works
 ### Ordinals
-While Ordinals are a source of controversy, they are here to stay. Their censorship resistance, ability to be uniquely minted, ability to store arbitrary data, ability to be identified, and ability to be traded make them a great way to solve a real-world problem: decentralizing the ownership of domain names on a truly immutable registry.
+While Ordinals are a source of controversy, they are here to stay. Their censorship resistance, ability to be uniquely minted, ability to store arbitrary data, ability to be identified, and ability to be traded, make them a great way to solve a real-world problem: decentralizing the ownership of domain names on a truly immutable registry.
 
 
 ### Nostr
@@ -21,7 +21,7 @@ While Ordinals are a source of controversy, they are here to stay. Their censors
 
 
 ### Inscriptions and Notes
-**The domain name inscription**: The domain name is just a string ending in `.btc` inscribed in an ordinal (e.g., `rowboto.btc`). Its owner is the current owner of the ordinal. `yarr` indexes these inscriptions, paying attention only to the current owner of the first occurrence of each domain name.
+**The domain name inscription**: The domain name is just a string ending in `.btc` inscribed in an ordinal (e.g., `rowboto.btc`). Its owner is the current owner of the ordinal. `bond` indexes these inscriptions, paying attention only to the current owner of the first occurrence of each domain name.
 
 **The routing inscription**: The routing is an inscribed JSON string owned by the same domain name owner, which contains their **Nostr** **npub** and the relays to use to find the IP to resolve the domain name to.
 ```json
@@ -33,30 +33,30 @@ While Ordinals are a source of controversy, they are here to stay. Their censors
     "nostr_relays": ["wss://relay.nostr.band", "wss://nos.lol", "wss://relay.damus.io"]
 }
 ```
-`yarr` always indexes the last routing inscription of the same owner, thus allowing for updates in case the owner wants to change their **npub** (e.g., in case of loss) or update the relays.
+`bond` always indexes the last routing inscription of the same owner, thus allowing for updates in case the owner wants to change their **npub** (e.g., in case of loss) or update the relays.
 
 **The resolution note**: The resolution is a note with the IP to resolve the domain name to, posted to **Nostr** by the **npub** on the **routing inscription** (either manually or via an automated script). This closes the loop of decentralized domain name resolution.
 
 
-## State of the `yarr`t
-Currently, `yarr` is just a proof of concept. It can effectively search **domain name** and **routing** inscriptions through the blockchain and store them in a database.
+## State of the art
+Currently, `bond` is just a proof of concept. It can effectively search **domain name** and **routing** inscriptions through the blockchain and store them in a database.
 
-Resolving to **Nostr** has not been implemented yet. To achieve this, `harr`, a plugin for [CoreDNS](https://coredns.io/), will be developed. When asked for a `.btc` domain, `harr` will query `yarr` to find the proper owner's **npub**, and then query the **Nostr** relays to find the IP to resolve the domain name to.
+Resolving to **Nostr** has not been implemented yet. To achieve this, a plugin for [CoreDNS](https://coredns.io/) will be developed. When asked for a `.btc` domain, `bond-plugin` will query `bond-service` to find the proper owner's **npub**, and then query the **Nostr** relays to find the IP to resolve the domain name to.
 
 Note that the current solution allows the owner of a domain to store their private keys in a cold wallet. Signing is only needed when transferring the **domain name inscription** or when writing a new **routing inscription**. On the other hand, the **Nostr** **nsec** will be needed each time a **resolution note** is posted.
 
 
 ## Diagram
 ```
- ____                       .---------.                              .------.
-(. _.) --- DNS Request ---> |         | ---- Who's rowboto.btc? ---> |      |
- /|\       rowboto.btc      |         |                              | yarr |
-  /\                        |         | <---- It's npub1xwja... ---- |      |
- User <-.                   | CoreDNS |       with relay list        '------'
-        |                   |  harr   |                              .-------------.
-        |                   |         | -- What's npub1xwja...'s --> |             |
-        |                   |         |    latest IP?                | Nostr Relay |
-        |                   |         |                              |             |
-        '-- DNS Response -- |         | <---- It's 121.99.9.12 ----- |             |
-            121.99.9.12     '---------'                              '-------------'
+ ____                       .-------------.                              .--------------.
+(. _.) --- DNS Request ---> |             | ---- Who's rowboto.btc? ---> |              |
+ /|\       rowboto.btc      |             |                              | bond service |
+  /\                        |             | <---- It's npub1xwja... ---- |              |
+ User <-.                   |   CoreDNS   |       with relay list        '--------------'
+        |                   | bond plugin |                              .-------------.
+        |                   |             | -- What's npub1xwja...'s --> |             |
+        |                   |             |    latest IP?                | Nostr Relay |
+        |                   |             |                              |             |
+        '-- DNS Response -- |             | <---- It's 121.99.9.12 ----- |             |
+            121.99.9.12     '-------------'                              '-------------'
 ```

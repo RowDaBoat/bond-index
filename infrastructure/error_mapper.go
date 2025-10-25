@@ -1,8 +1,8 @@
 package infrastructure
 
 import (
+	"bond/types"
 	"net/http"
-	"yarr/types"
 
 	"github.com/gin-gonic/gin"
 )

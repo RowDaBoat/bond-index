@@ -1,6 +1,6 @@
 package service
 
-import "yarr/types"
+import "bond/types"
 
 type BtcNameStore interface {
 	Store(btcName *types.BtcName) error

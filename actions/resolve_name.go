@@ -1,9 +1,9 @@
 package actions
 
 import (
+	"bond/service"
+	"bond/types"
 	"fmt"
-	"yarr/service"
-	"yarr/types"
 )
 
 type NameResolver struct {

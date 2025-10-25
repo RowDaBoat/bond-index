@@ -1,6 +1,6 @@
 package service
 
-import "yarr/types"
+import "bond/types"
 
 type RoutingStore interface {
 	Store(address string, name string, value *types.Routing) error

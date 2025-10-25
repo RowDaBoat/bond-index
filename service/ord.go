@@ -1,6 +1,6 @@
 package service
 
-import "yarr/types"
+import "bond/types"
 
 type Ord interface {
 	FetchInscription(id string) (*types.Inscription, error)

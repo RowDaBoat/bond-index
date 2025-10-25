@@ -1,7 +1,7 @@
 package core
 
 import (
-	"yarr/types"
+	"bond/types"
 )
 
 type InscriptionProcessor interface {

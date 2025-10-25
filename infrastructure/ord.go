@@ -1,9 +1,9 @@
 package infrastructure
 
 import (
+	"bond/types"
 	"fmt"
 	"strings"
-	"yarr/types"
 
 	"github.com/go-resty/resty/v2"
 )

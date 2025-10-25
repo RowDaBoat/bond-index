@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"time"
 
-	"yarr/actions"
-	"yarr/configuration"
-	"yarr/infrastructure"
-	"yarr/service"
+	"bond/actions"
+	"bond/configuration"
+	"bond/infrastructure"
+	"bond/service"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -16,7 +16,7 @@ import (
 var configOptions = []configuration.ConfigOption{
 	{
 		Name:        "config",
-		Default:     "$HOME/.yarr/yarr.conf",
+		Default:     "$HOME/.bond/bond.conf",
 		Type:        "file-path",
 		Description: "config file",
 	},
@@ -34,7 +34,7 @@ var configOptions = []configuration.ConfigOption{
 	},
 	{
 		Name:        "data-dir",
-		Default:     "$HOME/.yarr/data",
+		Default:     "$HOME/.bond/data",
 		Type:        "directory-path",
 		Description: "directory for data storage",
 	},

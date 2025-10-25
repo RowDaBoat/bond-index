@@ -5,13 +5,13 @@ RUN apk add --no-cache git
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o yarr
+RUN CGO_ENABLED=0 GOOS=linux go build -o bond
 
 FROM alpine:latest
 
 ENV ORD_URL=""
-COPY --from=builder /src/yarr /yarr
+COPY --from=builder /src/bond /bond
 RUN mkdir -p /data
 EXPOSE 80
 
-CMD /yarr --ord-url "$ORD_URL"
+CMD /bond --ord-url "$ORD_URL"

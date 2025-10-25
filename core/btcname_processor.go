@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"yarr/service"
-	"yarr/types"
+	"bond/service"
+	"bond/types"
 )
 
 type BtcNameProcessor struct {

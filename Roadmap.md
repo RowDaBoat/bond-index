@@ -7,11 +7,11 @@ First POC
 - [x] Properly handle reaching the end of the chain
 - [x] Build the index
 - [ ] Implement a DNS plugin for CoreDNS
-  - [ ] Build CoreDNS from source
-  - [ ] Install and configure CoreDNS as a regular DNS server
+  - [x] Build CoreDNS from source
+  - [x] Install and configure CoreDNS as a regular DNS server
+  - [x] Catch `.btc` requests
   - [ ] Implement a basic plugin
-  - [ ] Catch `.btc` requests
-  - [ ] Query the `yarr` API to resolve `.btc` domains to Nostr relays+npubs
+  - [ ] Query the `bond` service to resolve `.btc` domains to Nostr relays+npubs
   - [ ] Respond with the IP address from the Nostr relays+npub
 - [ ] Handle ownership of BTC Names and Routings
 

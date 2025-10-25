@@ -5,9 +5,9 @@ import (
 	"os"
 	"time"
 
-	"yarr/core"
-	"yarr/service"
-	"yarr/types"
+	"bond/core"
+	"bond/service"
+	"bond/types"
 
 	"golang.org/x/term"
 )
