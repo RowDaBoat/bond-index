@@ -28,7 +28,7 @@ var configOptions = []configuration.ConfigOption{
 	},
 	{
 		Name:        "ord-url",
-		Default:     "localhost:4080",
+		Default:     "http://localhost:4080",
 		Type:        "url",
 		Description: "host:port for the REST API on the ord server",
 	},

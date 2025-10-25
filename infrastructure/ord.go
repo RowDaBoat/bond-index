@@ -22,7 +22,7 @@ func NewOrd(client *resty.Client, ordUrl string) *Ord {
 
 func (s *Ord) FetchInscription(id string) (*types.Inscription, error) {
 	situation := fmt.Sprintf("fetching inscription %s", id)
-	url := fmt.Sprintf("http://%s/inscription/%s", s.ordUrl, id)
+	url := fmt.Sprintf("%s/inscription/%s", s.ordUrl, id)
 	var inscription types.Inscription
 	resp, err := s.client.R().
 		SetHeader("Accept", "application/json").
@@ -41,7 +41,7 @@ func (s *Ord) FetchInscription(id string) (*types.Inscription, error) {
 
 func (s *Ord) FetchContent(inscriptionId string) (string, error) {
 	situation := fmt.Sprintf("fetching content %s", inscriptionId)
-	url := fmt.Sprintf("http://%s/content/%s", s.ordUrl, inscriptionId)
+	url := fmt.Sprintf("%s/content/%s", s.ordUrl, inscriptionId)
 	resp, err := s.client.R().
 		Get(url)
 
@@ -62,7 +62,7 @@ func (s *Ord) HasContentType(inscription *types.Inscription, expectedContentType
 func (s *Ord) FetchBlock(blockId uint64) (*types.Block, error) {
 	var block types.Block
 	situation := fmt.Sprintf("fetching block %d", blockId)
-	url := fmt.Sprintf("http://%s/block/%d", s.ordUrl, blockId)
+	url := fmt.Sprintf("%s/block/%d", s.ordUrl, blockId)
 	resp, err := s.client.R().
 		SetHeader("Accept", "application/json").
 		SetResult(&block).
