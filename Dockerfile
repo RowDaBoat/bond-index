@@ -14,4 +14,4 @@ COPY --from=builder /src/bond /bond
 RUN mkdir -p /data
 EXPOSE 80
 
-CMD /bond --ord-url "$ORD_URL"
+CMD /bond --ord-url "$ORD_URL" --data-dir "$DATA_DIR"
