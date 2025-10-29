@@ -36,6 +36,7 @@ func (p *BtcNameProcessor) Process(inscription *types.Inscription) (string, erro
 		OwnerAddress: inscription.Address,
 	}
 
+	//TODO: handle casing
 	oldBtcName, err := p.BtcNameStore.Retrieve(newBtcName.Domain)
 	if err == nil && oldBtcName == nil {
 		p.BtcNameStore.Store(&newBtcName)
