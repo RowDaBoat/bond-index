@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
 	"reflect"
+	"syscall"
 	"time"
 
 	"bond/actions"
@@ -89,9 +92,12 @@ func main() {
 	if config.Help {
 		actions.Help(configOptions)
 	} else {
-		ord, btcNameStore, routingStore, blockStore := buildServices(config)
+		store, ord, btcNameStore, routingStore, blockStore := buildServices(config)
 		updater, nameResolver := buildActions(config, ord, btcNameStore, routingStore, blockStore)
 		server := infrastructure.NewHttpServer(nameResolver)
+
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
 		go func() {
 			if err := server.Start(config.RestListenUrl); err != nil {
@@ -99,11 +105,22 @@ func main() {
 			}
 		}()
 
-		updater.Update(config.StartBlock)
+		go func() {
+			updater.Update(config.StartBlock)
+		}()
+
+		// Wait for interrupt signal
+		<-sigChan
+		fmt.Printf("\nShutting down gracefully...\n")
+		if err := store.Close(); err != nil {
+			fmt.Printf("Error closing database: %v\n", err)
+		} else {
+			fmt.Printf("Database closed successfully\n")
+		}
 	}
 }
 
-func buildServices(config Config) (service.Ord, service.BtcNameStore, service.RoutingStore, service.BlockStore) {
+func buildServices(config Config) (*infrastructure.Store, service.Ord, service.BtcNameStore, service.RoutingStore, service.BlockStore) {
 	var ord service.Ord
 	var btcNameStore service.BtcNameStore
 	var routingStore service.RoutingStore
@@ -117,7 +134,7 @@ func buildServices(config Config) (service.Ord, service.BtcNameStore, service.Ro
 	routingStore = infrastructure.NewRoutingStore(store)
 	blockStore = infrastructure.NewBlockStore(store)
 
-	return ord, btcNameStore, routingStore, blockStore
+	return store, ord, btcNameStore, routingStore, blockStore
 }
 
 func buildActions(
