@@ -39,11 +39,3 @@ var (
 		Message: "routing not found",
 	}
 )
-
-func NewStoreError(err error) DomainError {
-	return DomainError{
-		Code:    ErrorCodeStoreFailure,
-		Message: "store operation failed",
-		Cause:   err,
-	}
-}

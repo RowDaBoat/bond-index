@@ -109,7 +109,6 @@ func main() {
 			updater.Update(config.StartBlock)
 		}()
 
-		// Wait for interrupt signal
 		<-sigChan
 		fmt.Printf("\nShutting down gracefully...\n")
 		if err := store.Close(); err != nil {

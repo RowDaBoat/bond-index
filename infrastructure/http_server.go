@@ -41,5 +41,5 @@ func (s *HttpServer) handleNameQuery(c *gin.Context) {
 		return
 	}
 
-	c.String(http.StatusOK, "%s", result)
+	c.JSON(http.StatusOK, result)
 }

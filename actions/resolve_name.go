@@ -3,12 +3,16 @@ package actions
 import (
 	"bond/service"
 	"bond/types"
-	"fmt"
 )
 
 type NameResolver struct {
 	btcNameStore service.BtcNameStore
 	routingStore service.RoutingStore
+}
+
+type NameResolution struct {
+	NostrNpub   string   `json:"npub"`
+	NostrRelays []string `json:"relays"`
 }
 
 func NewNameResolver(btcNameStore service.BtcNameStore, routingStore service.RoutingStore) *NameResolver {
@@ -18,28 +22,27 @@ func NewNameResolver(btcNameStore service.BtcNameStore, routingStore service.Rou
 	}
 }
 
-func (nr *NameResolver) Resolve(name string) (string, error) {
+func (nr *NameResolver) Resolve(name string) (*NameResolution, error) {
 	if name == "" {
-		return "", types.ErrNameRequired
+		return nil, types.ErrNameRequired
 	}
 
 	btcName, err := nr.btcNameStore.Retrieve(name)
 	if err != nil {
-		return "", types.NewStoreError(err)
+		return nil, types.ErrNameNotFound
 	}
 
 	if btcName == nil {
-		return "", types.ErrNameNotFound
+		return nil, types.ErrNameNotFound
 	}
 
 	routing, err := nr.routingStore.Retrieve(btcName.OwnerAddress, name)
 	if err != nil {
-		return "", types.NewStoreError(err)
+		return nil, types.ErrRoutingNotFound
 	}
 
-	if routing == nil {
-		return "", types.ErrRoutingNotFound
-	}
-
-	return fmt.Sprintf("%d: %s (Nostr: %s)", btcName.Number, btcName.OwnerAddress, routing.NostrNpub), nil
+	return &NameResolution{
+		NostrNpub:   routing.NostrNpub,
+		NostrRelays: routing.NostrRelays,
+	}, nil
 }

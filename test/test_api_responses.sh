@@ -35,9 +35,9 @@ expect_failure() {
     fi
 }
 
-expect_success "Name with routing on same wallet"       "yarrharr.btc" "$router_npub"
-expect_failure "Name without routing"                   "yohoho.btc"
-expect_failure "Routing without name"                   "ayeaye.btc"
-expect_failure "Name and routing on different wallets"  "ahoy.btc"
+expect_success "Name with routing on same wallet"       "bond.btc" "$router_npub"
+expect_failure "Name without routing"                   "noroute.btc"
+expect_failure "Routing without name"                   "noname.btc"
+expect_failure "Name and routing on different wallets"  "nowallet.btc"
 
 echo "All tests completed successfully!" 
