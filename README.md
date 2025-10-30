@@ -46,7 +46,7 @@ Resolving to **Nostr** has not been implemented yet. To achieve this, a plugin f
 
 Note that the current solution allows the owner of a domain to store their private keys in a cold wallet. Signing is only needed when transferring the **domain name inscription** or when writing a new **routing inscription**. On the other hand, the **Nostr** **nsec** will be needed each time a **resolution note** is posted.
 
-> **Warning**: The current implementation checks the ownership of domain name and routing inscriptions by checking they belong to the same address. This leaves wide open the possibility of a routing attack, where the attacker can just gift a routing inscription to the same address as the name inscription, and override the current routing. This can be solved in multiple ways, some of the solutions are: requiring the routing to be signed by the owner of the btcname, or requiring that the routing is inscribed in the same sat as the name. More solutions will be explored later in development.
+> **Warning**: While it's ok to get your .btcname domain registered, **do not rush to create a routing inscription for it**. The current implementation checks the ownership of domain name and routing inscriptions by checking they belong to the same address. This leaves wide open the possibility of a routing attack, where the attacker can just gift a routing inscription to the same address as the name inscription, and override the current routing. This can be solved in multiple ways, some of the solutions are: requiring the routing to be signed by the owner of the btcname, or requiring that the routing is inscribed in the same sat as the name. More solutions will be explored later in development.
 
 ## Diagram
 ```
