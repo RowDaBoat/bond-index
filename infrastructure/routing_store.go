@@ -5,6 +5,7 @@ import (
 	"bond/types"
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/dgraph-io/badger/v4"
 )
@@ -26,6 +27,9 @@ func (s *RoutingStore) Store(address string, name string, value *types.Routing) 
 	valueBytes = append(valueBytes, []byte(value.Address)...)
 	valueBytes = append(valueBytes, 0)
 	valueBytes = append(valueBytes, []byte(value.NostrNpub)...)
+	valueBytes = append(valueBytes, 0)
+	relaysJoined := strings.Join(value.NostrRelays, ",")
+	valueBytes = append(valueBytes, []byte(relaysJoined)...)
 
 	return s.store.db.Update(func(txn *badger.Txn) error {
 		return txn.Set(key, valueBytes)
@@ -52,14 +56,19 @@ func (s *RoutingStore) Retrieve(address string, name string) (*types.Routing, er
 	}
 
 	parts := bytes.Split(value, []byte{0})
-	if len(parts) != 2 {
+	if len(parts) != 3 {
 		return nil, fmt.Errorf("invalid routing data format")
 	}
 
+	relaysStr := string(parts[2])
+
+	var relays = strings.Split(relaysStr, ",")
+
 	return &types.Routing{
-		Address:   string(parts[0]),
-		Domain:    name,
-		NostrNpub: string(parts[1]),
+		Address:     string(parts[0]),
+		Domain:      name,
+		NostrNpub:   string(parts[1]),
+		NostrRelays: relays,
 	}, nil
 }
 
