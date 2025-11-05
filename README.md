@@ -9,6 +9,7 @@
 `bond` is **Bitcoin**, **Ordinals**, and **Nostr**, into **DNS**. It decentralizes domain name resolution using **Bitcoin** and **Ordinals** as the domain registration protocol, and [**Nostr**](https://github.com/nostr-protocol/nostr) for dynamic IP address lookup.
 
 In practice, that means that `bond` resolves [`.btc` domain names](https://docs.btcname.id/docs) such as `godofthunder.btc` or `rowboto.btc` to IP addresses posted in **Nostr** notes.
+This project is paired with a [CoreDNS plugin](http://github.com/RowDaBoat/bond-coredns) that implements the actual DNS resolution.
 
 > **Warning**: The current implementation is a **Proof of Concept** and is not production ready. Do not use it on mainnet **by any means**.
 
