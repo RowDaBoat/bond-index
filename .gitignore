@@ -17,3 +17,5 @@ bond
 
 publication
 .DS_Store
+*.local
+*.local.*

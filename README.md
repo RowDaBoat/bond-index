@@ -1,4 +1,4 @@
-# bond
+# Bond Index
 
 [![Go Version](https://img.shields.io/badge/Go-1.23.5+-blue.svg)](https://golang.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -13,6 +13,11 @@ This project is paired with a [CoreDNS plugin](http://github.com/RowDaBoat/bond-
 
 > **Warning**: The current implementation is a **Proof of Concept** and is not production ready. Do not use it on mainnet **by any means**.
 
+
+## Indexer
+`bond-index` has the inscription indexer that routes domain names to IPs obtained from Nostr, it offers a REST API for the resolution. The DNS protocol is handled by the [`bond-coredns`](https://github.com/RowDaBoat/bond-coredns) plugin for CoreDNS.
+
+
 ## How It Works
 ### Ordinals
 While Ordinals are a source of controversy, they are here to stay. Their censorship resistance, ability to be uniquely minted, ability to store arbitrary data, ability to be identified, and ability to be traded, make them a great way to solve a real-world problem: decentralizing the ownership of domain names on a truly immutable registry.
@@ -25,7 +30,7 @@ While Ordinals are a source of controversy, they are here to stay. Their censors
 ### Inscriptions and Notes
 **The domain name inscription**: The domain name is just a string ending in `.btc` inscribed in an ordinal (e.g., `rowboto.btc`). Its owner is the current owner of the ordinal. `bond` indexes these inscriptions, paying attention only to the current owner of the first occurrence of each domain name.
 
-**The routing inscription**: The routing is an inscribed JSON string owned by the same domain name owner, which contains their **Nostr** **npub** and the relays to use to find the IP to resolve the domain name to.
+**The routing inscription**: The routing is an inscribed JSON string owned [TODO: owned or inscribed?] by the same domain name owner, which contains their **Nostr** **npub** and the relays to use to find the IP to resolve the domain name to.
 ```json
 {
     "p": "btcname",
@@ -41,9 +46,7 @@ While Ordinals are a source of controversy, they are here to stay. Their censors
 
 
 ## State of the art
-Currently, `bond` is just a proof of concept. It can effectively search **domain name** and **routing** inscriptions through the blockchain and store them in a database.
-
-Resolving to **Nostr** has not been implemented yet. To achieve this, a plugin for [CoreDNS](https://coredns.io/) will be developed. When asked for a `.btc` domain, `bond-plugin` will query `bond-service` to find the proper owner's **npub**, and then query the **Nostr** relays to find the IP to resolve the domain name to.
+Although `bond` can resolve inscribed `.btc` domain names to IPs in Nostr notes via REST queries, it is currently just a proof of concept.
 
 Note that the current solution allows the owner of a domain to store their private keys in a cold wallet. Signing is only needed when transferring the **domain name inscription** or when writing a new **routing inscription**. On the other hand, the **Nostr** **nsec** will be needed each time a **resolution note** is posted.
 

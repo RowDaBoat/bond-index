@@ -11,8 +11,8 @@ First POC
   - [x] Install and configure CoreDNS as a regular DNS server
   - [x] Catch `.btc` requests
   - [x] Implement a basic plugin
-  - [ ] Query the `bond` service to resolve `.btc` domains to Nostr relays+npubs
-  - [ ] Respond with the IP address from the Nostr relays+npub
+  - [x] Query the `bond` service to resolve `.btc` domains to Nostr relays+npubs
+  - [x] Respond with the IP address from the Nostr relays+npub
 - [ ] Handle ownership of BTC Names and Routings
 
 Golden Milestone
