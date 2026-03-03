@@ -13,27 +13,29 @@ import (
 )
 
 type IndexUpdater struct {
-	ord          service.Ord
-	btcNameStore service.BtcNameStore
-	routingStore service.RoutingStore
-	blockStore   service.BlockStore
-	processors   []core.InscriptionProcessor
-	startBlock   uint64
+	ord            service.Ord
+	btcNameStore   service.BtcNameStore
+	routingStore   service.RoutingStore
+	blockStore     service.BlockStore
+	processors     []core.InscriptionProcessor
+	startBlock     uint64
+	nonInteractive bool
 }
 
-func NewIndexUpdater(ord service.Ord, btcNameStore service.BtcNameStore, routingStore service.RoutingStore, blockStore service.BlockStore, startBlock uint64) *IndexUpdater {
+func NewIndexUpdater(ord service.Ord, btcNameStore service.BtcNameStore, routingStore service.RoutingStore, blockStore service.BlockStore, startBlock uint64, nonInteractive bool) *IndexUpdater {
 	processors := []core.InscriptionProcessor{
 		&core.BtcNameProcessor{Ord: ord, BtcNameStore: btcNameStore},
 		&core.RoutingProcessor{Ord: ord, RoutingStore: routingStore},
 	}
 
 	return &IndexUpdater{
-		ord:          ord,
-		btcNameStore: btcNameStore,
-		routingStore: routingStore,
-		blockStore:   blockStore,
-		processors:   processors,
-		startBlock:   startBlock,
+		ord:            ord,
+		btcNameStore:   btcNameStore,
+		routingStore:   routingStore,
+		blockStore:     blockStore,
+		processors:     processors,
+		startBlock:     startBlock,
+		nonInteractive: nonInteractive,
 	}
 }
 
@@ -103,7 +105,7 @@ func (iu *IndexUpdater) showBlock(block *types.Block) {
 	percentageString := fmt.Sprintf("%.2f%%", percentage)
 	inscriptionCount := len(block.Inscriptions)
 
-	if term.IsTerminal(int(os.Stdout.Fd())) {
+	if !iu.nonInteractive && term.IsTerminal(int(os.Stdout.Fd())) {
 		fmt.Printf(
 			"\033[K\rBlock %d/%d %s %d inscriptions:",
 			block.Height, bestHeight, percentageString, inscriptionCount,

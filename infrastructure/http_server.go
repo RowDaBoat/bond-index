@@ -22,6 +22,7 @@ func NewHttpServer(nameResolver *actions.NameResolver) *HttpServer {
 		router:       router,
 	}
 
+	router.GET("/health", func(c *gin.Context) { c.Status(http.StatusOK) })
 	router.GET("/name/:name", server.handleNameQuery)
 
 	return server
