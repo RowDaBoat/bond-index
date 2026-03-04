@@ -10,15 +10,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type HttpServer struct {
+type QueryHttpServer struct {
 	nameResolver *actions.NameResolver
 	router       *gin.Engine
 }
 
-func NewHttpServer(nameResolver *actions.NameResolver) *HttpServer {
+func NewQueryHttpServer(nameResolver *actions.NameResolver) *QueryHttpServer {
 	router := gin.Default()
 
-	server := &HttpServer{
+	server := &QueryHttpServer{
 		nameResolver: nameResolver,
 		router:       router,
 	}
@@ -29,15 +29,15 @@ func NewHttpServer(nameResolver *actions.NameResolver) *HttpServer {
 	return server
 }
 
-func (s *HttpServer) Start(address string) {
-	fmt.Printf("Starting HTTP server on %s\n", address)
+func (s *QueryHttpServer) Start(address string) {
+	fmt.Printf("Starting query HTTP server on %s\n", address)
 	if err := s.router.Run(address); err != nil {
-		fmt.Printf("HTTP server error: %v\n", err)
+		fmt.Printf("Query HTTP server error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func (s *HttpServer) handleNameQuery(c *gin.Context) {
+func (s *QueryHttpServer) handleNameQuery(c *gin.Context) {
 	name := c.Param("name")
 	result, err := s.nameResolver.Resolve(name)
 

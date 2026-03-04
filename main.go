@@ -1,13 +1,11 @@
 package main
 
 import (
-	"bufio"
+	"encoding/json"
 	"fmt"
-	"net"
 	"os"
 	"os/signal"
 	"reflect"
-	"strings"
 	"syscall"
 	"time"
 
@@ -20,7 +18,7 @@ import (
 )
 
 var commands = []actions.Command{
-	{Name: "server", Description: "start the bond server (default)"},
+	{Name: "serve", Description: "start the bond server (default)"},
 	{Name: "sync", Description: "trigger a sync on the running bond instance"},
 	{Name: "help", Description: "show this help"},
 }
@@ -36,7 +34,13 @@ var configOptions = []configuration.ConfigOption{
 		Name:        "rest-listen-url",
 		Default:     "0.0.0.0:80",
 		Type:        "uint16",
-		Description: "port for the REST API server to listen on",
+		Description: "host:port for the public query REST API server to listen on",
+	},
+	{
+		Name:        "control-listen-url",
+		Default:     "127.0.0.1:8081",
+		Type:        "string",
+		Description: "host:port for the internal control REST API server to listen on",
 	},
 	{
 		Name:        "ord-url",
@@ -77,13 +81,14 @@ var configOptions = []configuration.ConfigOption{
 }
 
 type Config struct {
-	ConfigFile     string `config:"config"`
-	RestListenUrl  string `config:"rest-listen-url"`
-	OrdUrl         string `config:"ord-url"`
-	DataDir        string `config:"data-dir"`
-	StartBlock     uint64 `config:"start-block"`
-	NonInteractive bool   `config:"non-interactive"`
-	NoAutoIndex    bool   `config:"no-auto-index"`
+	ConfigFile       string `config:"config"`
+	RestListenUrl    string `config:"rest-listen-url"`
+	ControlListenUrl string `config:"control-listen-url"`
+	OrdUrl           string `config:"ord-url"`
+	DataDir          string `config:"data-dir"`
+	StartBlock       uint64 `config:"start-block"`
+	NonInteractive   bool   `config:"non-interactive"`
+	NoAutoIndex      bool   `config:"no-auto-index"`
 }
 
 func (c *Config) printConfig() {
@@ -130,19 +135,18 @@ func runServer() {
 
 	store, ord, btcNameStore, routingStore, blockStore := buildServices(config)
 	updater, nameResolver := buildActions(config, ord, btcNameStore, routingStore, blockStore)
-	httpServer := infrastructure.NewHttpServer(nameResolver)
-	socketServer := infrastructure.NewSocketServer(config.DataDir, updater.SyncRequests())
+	queryServer := infrastructure.NewQueryHttpServer(nameResolver)
+	controlServer := infrastructure.NewControlHttpServer(updater.SyncRequests())
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
 	go updater.Start(config.StartBlock)
-	go httpServer.Start(config.RestListenUrl)
-	go socketServer.Start()
+	go queryServer.Start(config.RestListenUrl)
+	go controlServer.Start(config.ControlListenUrl)
 
 	<-sigChan
 	fmt.Printf("\nShutting down gracefully...\n")
-	socketServer.Close()
 
 	if err := store.Close(); err != nil {
 		fmt.Printf("Error closing database: %v\n", err)
@@ -153,24 +157,31 @@ func runServer() {
 
 func runSync() {
 	config := configuration.ParseConfig[Config](configOptions)
-	socketPath := infrastructure.SocketPath(config.DataDir)
+	client := resty.New()
+	client.SetTimeout(10 * time.Second)
 
-	conn, err := net.Dial("unix", socketPath)
+	url := fmt.Sprintf("http://%s/sync", config.ControlListenUrl)
+
+	resp, err := client.R().Post(url)
 	if err != nil {
-		fmt.Printf("Failed to connect to bond server: %v\n", err)
-		os.Exit(1)
-	}
-	defer conn.Close()
-
-	fmt.Fprintf(conn, "%s\n", actions.CmdSync)
-
-	response, err := bufio.NewReader(conn).ReadString('\n')
-	if err != nil {
-		fmt.Printf("Failed to read response: %v\n", err)
+		fmt.Printf("Failed to call control API: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Synced to block %s\n", strings.TrimSpace(response))
+	if resp.StatusCode() != 200 {
+		fmt.Printf("Control API returned status %d: %s\n", resp.StatusCode(), resp.String())
+		os.Exit(1)
+	}
+
+	var body struct {
+		SyncedToBlock uint64 `json:"synced_to_block"`
+	}
+	if err := json.Unmarshal(resp.Body(), &body); err != nil {
+		fmt.Printf("Failed to parse control API response: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Synced to block %d\n", body.SyncedToBlock)
 }
 
 func runHelp() {
