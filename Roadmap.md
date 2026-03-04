@@ -14,6 +14,9 @@ First POC
   - [x] Query the `bond` service to resolve `.btc` domains to Nostr relays+npubs
   - [x] Respond with the IP address from the Nostr relays+npub
 - [ ] Handle ownership of BTC Names and Routings
+- [ ] Convert tests to python
+- [ ] Implement routings in CBOR
+- [ ] Make sure it runs on windows
 
 Golden Milestone
 - [ ] Setup a public DNS server to resolve `.btc` domains

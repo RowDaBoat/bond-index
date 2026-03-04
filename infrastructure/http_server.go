@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"bond/actions"
 
@@ -28,9 +29,12 @@ func NewHttpServer(nameResolver *actions.NameResolver) *HttpServer {
 	return server
 }
 
-func (s *HttpServer) Start(address string) error {
+func (s *HttpServer) Start(address string) {
 	fmt.Printf("Starting HTTP server on %s\n", address)
-	return s.router.Run(address)
+	if err := s.router.Run(address); err != nil {
+		fmt.Printf("HTTP server error: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func (s *HttpServer) handleNameQuery(c *gin.Context) {

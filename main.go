@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"net"
 	"os"
 	"os/signal"
 	"reflect"
+	"strings"
 	"syscall"
 	"time"
 
@@ -25,7 +28,7 @@ var commands = []actions.Command{
 var configOptions = []configuration.ConfigOption{
 	{
 		Name:        "config",
-		Default:     "$HOME/.bond/bond.conf",
+		Default:     "~/.bond/bond.conf",
 		Type:        "file-path",
 		Description: "config file",
 	},
@@ -43,7 +46,7 @@ var configOptions = []configuration.ConfigOption{
 	},
 	{
 		Name:        "data-dir",
-		Default:     "$HOME/.bond/data",
+		Default:     "~/.bond/data",
 		Type:        "directory-path",
 		Description: "directory for data storage",
 	},
@@ -65,6 +68,12 @@ var configOptions = []configuration.ConfigOption{
 		Type:        "bool",
 		Description: "disable interactive output",
 	},
+	{
+		Name:        "no-auto-index",
+		Default:     "false",
+		Type:        "bool",
+		Description: "disable automatic indexing, only sync on demand via 'bond sync'",
+	},
 }
 
 type Config struct {
@@ -74,6 +83,7 @@ type Config struct {
 	DataDir        string `config:"data-dir"`
 	StartBlock     uint64 `config:"start-block"`
 	NonInteractive bool   `config:"non-interactive"`
+	NoAutoIndex    bool   `config:"no-auto-index"`
 }
 
 func (c *Config) printConfig() {
@@ -85,7 +95,7 @@ func (c *Config) printConfig() {
 	for i := 0; i < val.NumField(); i++ {
 		field := typ.Field(i).Name
 		value := val.Field(i).Interface()
-		fmt.Printf("  %-14s %v\n", field+":", value)
+		fmt.Printf("  %-16s %v\n", field+":", value)
 	}
 	fmt.Println()
 }
@@ -120,23 +130,20 @@ func runServer() {
 
 	store, ord, btcNameStore, routingStore, blockStore := buildServices(config)
 	updater, nameResolver := buildActions(config, ord, btcNameStore, routingStore, blockStore)
-	server := infrastructure.NewHttpServer(nameResolver)
+	httpServer := infrastructure.NewHttpServer(nameResolver)
+	socketServer := infrastructure.NewSocketServer(config.DataDir, updater.SyncRequests())
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
-	go func() {
-		if err := server.Start(config.RestListenUrl); err != nil {
-			fmt.Printf("HTTP server error: %v\n", err)
-		}
-	}()
-
-	go func() {
-		updater.Update(config.StartBlock)
-	}()
+	go updater.Start(config.StartBlock)
+	go httpServer.Start(config.RestListenUrl)
+	go socketServer.Start()
 
 	<-sigChan
 	fmt.Printf("\nShutting down gracefully...\n")
+	socketServer.Close()
+
 	if err := store.Close(); err != nil {
 		fmt.Printf("Error closing database: %v\n", err)
 	} else {
@@ -145,7 +152,25 @@ func runServer() {
 }
 
 func runSync() {
-	fmt.Println("sync: not yet implemented")
+	config := configuration.ParseConfig[Config](configOptions)
+	socketPath := infrastructure.SocketPath(config.DataDir)
+
+	conn, err := net.Dial("unix", socketPath)
+	if err != nil {
+		fmt.Printf("Failed to connect to bond server: %v\n", err)
+		os.Exit(1)
+	}
+	defer conn.Close()
+
+	fmt.Fprintf(conn, "%s\n", actions.CmdSync)
+
+	response, err := bufio.NewReader(conn).ReadString('\n')
+	if err != nil {
+		fmt.Printf("Failed to read response: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Synced to block %s\n", strings.TrimSpace(response))
 }
 
 func runHelp() {
@@ -179,7 +204,7 @@ func buildActions(
 	*actions.IndexUpdater,
 	*actions.NameResolver,
 ) {
-	updater := actions.NewIndexUpdater(ord, btcNameStore, routingStore, blockStore, config.StartBlock, config.NonInteractive)
+	updater := actions.NewIndexUpdater(ord, btcNameStore, routingStore, blockStore, config.StartBlock, config.NonInteractive, config.NoAutoIndex)
 	nameResolver := actions.NewNameResolver(btcNameStore, routingStore)
 	return updater, nameResolver
 }

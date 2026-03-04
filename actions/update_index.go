@@ -12,6 +12,8 @@ import (
 	"golang.org/x/term"
 )
 
+type SyncRequest chan uint64
+
 type IndexUpdater struct {
 	ord            service.Ord
 	btcNameStore   service.BtcNameStore
@@ -20,9 +22,11 @@ type IndexUpdater struct {
 	processors     []core.InscriptionProcessor
 	startBlock     uint64
 	nonInteractive bool
+	noAutoIndex    bool
+	syncRequests   chan SyncRequest
 }
 
-func NewIndexUpdater(ord service.Ord, btcNameStore service.BtcNameStore, routingStore service.RoutingStore, blockStore service.BlockStore, startBlock uint64, nonInteractive bool) *IndexUpdater {
+func NewIndexUpdater(ord service.Ord, btcNameStore service.BtcNameStore, routingStore service.RoutingStore, blockStore service.BlockStore, startBlock uint64, nonInteractive bool, noAutoIndex bool) *IndexUpdater {
 	processors := []core.InscriptionProcessor{
 		&core.BtcNameProcessor{Ord: ord, BtcNameStore: btcNameStore},
 		&core.RoutingProcessor{Ord: ord, RoutingStore: routingStore},
@@ -36,10 +40,16 @@ func NewIndexUpdater(ord service.Ord, btcNameStore service.BtcNameStore, routing
 		processors:     processors,
 		startBlock:     startBlock,
 		nonInteractive: nonInteractive,
+		noAutoIndex:    noAutoIndex,
+		syncRequests:   make(chan SyncRequest, 10),
 	}
 }
 
-func (iu *IndexUpdater) Update(startBlock uint64) {
+func (iu *IndexUpdater) SyncRequests() chan SyncRequest {
+	return iu.syncRequests
+}
+
+func (iu *IndexUpdater) Start(startBlock uint64) {
 	lastIndexedBlock, err := iu.blockStore.GetLastIndexedBlock()
 	if err != nil {
 		fmt.Printf("Error getting last indexed block: %v\n", err)
@@ -58,7 +68,21 @@ func (iu *IndexUpdater) Update(startBlock uint64) {
 			}
 		}
 
-		backoff = iu.waitBackoff(backoff, result)
+		if result != Success {
+			iu.respondToSyncRequests(blockId)
+			backoff = iu.wait(backoff, result)
+		}
+	}
+}
+
+func (iu *IndexUpdater) respondToSyncRequests(blockId uint64) {
+	for {
+		select {
+		case req := <-iu.syncRequests:
+			req <- blockId
+		default:
+			return
+		}
 	}
 }
 
@@ -129,20 +153,31 @@ func (iu *IndexUpdater) processInscriptions(block *types.Block) {
 	}
 }
 
-func (iu *IndexUpdater) waitBackoff(backoff time.Duration, result ProcessBlockResult) time.Duration {
-	if result == Success {
-		return time.Second
-	} else if result == MaxBackoff {
-		backoff = time.Minute * 5
-		fmt.Printf("Waiting %v...\n", backoff)
-		time.Sleep(backoff)
-		return backoff
-	} else {
-		fmt.Printf("Waiting %v...\n", backoff)
-		time.Sleep(backoff)
-		backoff = min(backoff*2, time.Minute*5)
+func (iu *IndexUpdater) wait(backoff time.Duration, result ProcessBlockResult) time.Duration {
+	if iu.noAutoIndex {
+		req := <-iu.syncRequests
+		iu.syncRequests <- req
 		return backoff
 	}
+
+	if result == MaxBackoff {
+		backoff = time.Minute * 5
+	}
+
+	fmt.Printf("Waiting %v...\n", backoff)
+
+	select {
+	case req := <-iu.syncRequests:
+		fmt.Printf("Sync requested, waking up.\n")
+		iu.syncRequests <- req
+	case <-time.After(backoff):
+	}
+
+	if result == MaxBackoff {
+		return backoff
+	}
+
+	return min(backoff*2, time.Minute*5)
 }
 
 func (iu *IndexUpdater) processInscription(id string) (string, error) {

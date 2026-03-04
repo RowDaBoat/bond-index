@@ -11,8 +11,8 @@ type NameResolver struct {
 }
 
 type NameResolution struct {
-	NostrNpub   string   `json:"npub"`
-	NostrRelays []string `json:"relays"`
+	NostrNpub   string   `json:"nostr_npub"`
+	NostrRelays []string `json:"nostr_relays"`
 }
 
 func NewNameResolver(btcNameStore service.BtcNameStore, routingStore service.RoutingStore) *NameResolver {
