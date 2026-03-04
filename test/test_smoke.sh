@@ -9,3 +9,15 @@ start_services
 echo ""
 echo "Smoke test: services started and responding"
 echo ""
+
+assert_success "bitcoind responds to getblockchaininfo" \
+    bitcoin_cli getblockchaininfo
+
+assert_success "ord status endpoint is reachable" \
+    curl -sf "http://localhost:$ORD_PORT/status"
+
+assert_success "bond health endpoint is reachable" \
+    curl -sf "http://localhost:$BOND_PORT/health"
+
+echo ""
+echo "All smoke test assertions passed."

@@ -7,7 +7,7 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 LOG_BITCOIND=/dev/null
 LOG_ORD=/dev/null
-LOG_BOND=/dev/stdout
+LOG_BOND=/dev/null
 
 for arg in "$@"; do
     case "$arg" in
@@ -58,10 +58,8 @@ wait_for() {
     local check_cmd=$2
     local max_attempts=${3:-30}
 
-    echo -n "Waiting for $name... "
     for i in $(seq 1 "$max_attempts"); do
         if eval "$check_cmd" &>/dev/null; then
-            echo "ok."
             return 0
         fi
         sleep 1
@@ -76,11 +74,8 @@ wait_for_start() {
     local check_cmd=$2
     local max_attempts=${3:-30}
 
-    echo -n "Starting $name... "
-
     for i in $(seq 1 "$max_attempts"); do
         if eval "$check_cmd" &>/dev/null; then
-            echo "ok."
             return 0
         fi
         sleep 1
@@ -145,22 +140,47 @@ ord_sync() {
         "[ \$(curl -sf http://localhost:$ORD_PORT/blockcount) -ge $height ]"
 }
 
+assert_setup_task() {
+    local description=$1
+    shift
+
+    if "$@" >/dev/null 2>&1; then
+        echo "$description: ok."
+    else
+        echo "$description: failed."
+        return 1
+    fi
+}
+
 assert_equals() {
     local description=$1
     local expected=$2
     local actual=$3
 
     if [ "$actual" = "$expected" ]; then
-        echo "PASS: $description"
+        echo "✅ PASS: $description"
     else
-        echo "FAIL: $description"
+        echo "❌ FAIL: $description"
         echo "  expected: $expected"
         echo "  actual:   $actual"
         return 1
     fi
 }
 
+assert_success() {
+    local description=$1
+    shift
+
+    if "$@" >/dev/null 2>&1; then
+        echo "✅ PASS: $description"
+    else
+        echo "❌ FAIL: $description"
+        return 1
+    fi
+}
+
 start_services() {
+    # Check dependencies
     for cmd in bitcoind bitcoin-cli ord; do
         if ! command -v "$cmd" &>/dev/null; then
             echo "Error: $cmd is not installed."
@@ -168,22 +188,29 @@ start_services() {
         fi
     done
 
-    echo -n "Building bond... "
-    (cd "$PROJECT_DIR" && go build -o "$TEST_DIR/bond" .)
-    echo "ok."
+    # Build bond
+    assert_setup_task "Build bond" \
+        bash -c "(cd \"$PROJECT_DIR\" && go build -o \"$TEST_DIR/bond\" .)"
 
+    # Launch bitcoind
     bitcoin_server &>$LOG_BITCOIND &
     BITCOIND_PID=$!
-    wait_for_start "bitcoind" "bitcoin_cli getblockchaininfo" || return 1
+    assert_setup_task "bitcoind started" \
+        wait_for_start "bitcoind" "bitcoin_cli getblockchaininfo"
 
+    # Launch ord
     ord_server --http-port "$ORD_PORT" &>$LOG_ORD &
     ORD_PID=$!
-    wait_for_start "ord" "curl -sf http://localhost:$ORD_PORT/status" || return 1
+    assert_setup_task "ord started" \
+        wait_for_start "ord" "curl -sf http://localhost:$ORD_PORT/status"
 
+    # Launch bond
     bond_server &>$LOG_BOND &
     BOND_PID=$!
-    wait_for_start "bond" "curl -sf http://localhost:$BOND_PORT/health" 10 || return 1
+    assert_setup_task "bond started" \
+        wait_for_start "bond" "curl -sf http://localhost:$BOND_PORT/health" 10
 
+    # Done
     echo "All services running."
     echo ""
 }
