@@ -36,7 +36,7 @@ func (nr *NameResolver) Resolve(name string) (*NameResolution, error) {
 		return nil, types.ErrNameNotFound
 	}
 
-	routing, err := nr.routingStore.Retrieve(btcName.OwnerAddress, name)
+	routing, err := nr.routingStore.Retrieve(name)
 	if err != nil {
 		return nil, types.ErrRoutingNotFound
 	}

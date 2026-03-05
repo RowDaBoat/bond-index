@@ -30,10 +30,9 @@ func (p *BtcNameProcessor) Process(inscription *types.Inscription) (string, erro
 	}
 
 	newBtcName := types.BtcName{
-		Domain:       content,
-		Number:       inscription.Number,
-		Id:           inscription.Id,
-		OwnerAddress: inscription.Address,
+		Domain: content,
+		Number: inscription.Number,
+		Id:     inscription.Id,
 	}
 
 	//TODO: handle casing
@@ -47,8 +46,8 @@ func (p *BtcNameProcessor) Process(inscription *types.Inscription) (string, erro
 	}
 
 	return fmt.Sprintf(
-			"  Id:\t\t%s\n  Number:\t%d\n  OwnerAddress:\t%s\n  Domain:\t%s",
-			newBtcName.Id, newBtcName.Number, newBtcName.OwnerAddress, newBtcName.Domain,
+			"  Id:\t\t%s\n  Number:\t%d\n  Domain:\t%s",
+			newBtcName.Id, newBtcName.Number, newBtcName.Domain,
 		),
 		nil
 }

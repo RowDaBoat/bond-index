@@ -25,8 +25,8 @@ ROUTING_FILE="$TEST_DIR/routing.json"
 cat > "$ROUTING_FILE" <<EOF
 {"p":"btcname","op":"routing","name":"test.btc","nostr_npub":"npub1testpubkey","nostr_relays":["wss://relay.example.com"]}
 EOF
-#ord_wallet inscribe --fee-rate 1 --no-backup --parent "$NAME_INSCRIPTION_ID"  --file "$ROUTING_FILE" &>$LOG_ORD
-ord_wallet inscribe --fee-rate 1 --no-backup --destination "$NAME_ADDRESS" --file "$ROUTING_FILE" &>$LOG_ORD
+ord_wallet inscribe --fee-rate 1 --no-backup --parent "$NAME_INSCRIPTION_ID"  --file "$ROUTING_FILE" &>$LOG_ORD
+#ord_wallet inscribe --fee-rate 1 --no-backup --destination "$NAME_ADDRESS" --file "$ROUTING_FILE" &>$LOG_ORD
 
 mine 7 "$WALLET_ADDRESS"
 ord_sync

@@ -27,7 +27,8 @@ func (p *RoutingProcessor) Process(inscription *types.Inscription) (string, erro
 
 	var routingInscription RoutingInscription
 	if err := json.Unmarshal([]byte(content), &routingInscription); err != nil {
-		return "", err
+		// Ignore malformed routing inscriptions.
+		return "", nil
 	}
 
 	if routingInscription.Protocol != "btcname" {
@@ -42,20 +43,34 @@ func (p *RoutingProcessor) Process(inscription *types.Inscription) (string, erro
 		return "", nil
 	}
 
+	if len(inscription.Parents) == 0 {
+		return "", nil
+	}
+
+	parentId := inscription.Parents[0]
+	parentInscription, err := p.Ord.FetchInscription(parentId)
+	if err != nil {
+		// Network / API errors should be surfaced and retried.
+		return "", err
+	}
+	if parentInscription == nil {
+		// If the parent cannot be found, ignore this routing inscription.
+		return "", nil
+	}
+
 	routing := &types.Routing{
-		Address:     inscription.Address,
 		Domain:      routingInscription.Name,
 		NostrNpub:   routingInscription.NostrNpub,
 		NostrRelays: routingInscription.NostrRelays,
 	}
 
-	if err := p.RoutingStore.Store(inscription.Address, routing.Domain, routing); err != nil {
+	if err := p.RoutingStore.Store(routing.Domain, routing); err != nil {
 		return "", err
 	}
 
 	return fmt.Sprintf(
-			"  Id:\t%s\n  Number:\t%d\n  OwnerAddress:\t%s\n  Domain:\t%s\n  Nostr npub:\t%s",
-			inscription.Id, inscription.Number, inscription.Address, routing.Domain, routing.NostrNpub,
+			"  Id:\t%s\n  Number:\t%d\n  Domain:\t%s\n  Nostr npub:\t%s",
+			inscription.Id, inscription.Number, routing.Domain, routing.NostrNpub,
 		),
 		nil
 }

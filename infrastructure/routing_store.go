@@ -20,12 +20,10 @@ func NewRoutingStore(store *Store) *RoutingStore {
 	return &RoutingStore{store: store}
 }
 
-func (s *RoutingStore) Store(address string, name string, value *types.Routing) error {
-	key := []byte(fmt.Sprintf("routing:%s:%s", address, name))
+func (s *RoutingStore) Store(name string, value *types.Routing) error {
+	key := []byte(fmt.Sprintf("routing:%s", name))
 
 	valueBytes := make([]byte, 0)
-	valueBytes = append(valueBytes, []byte(value.Address)...)
-	valueBytes = append(valueBytes, 0)
 	valueBytes = append(valueBytes, []byte(value.NostrNpub)...)
 	valueBytes = append(valueBytes, 0)
 	relaysJoined := strings.Join(value.NostrRelays, ",")
@@ -36,8 +34,8 @@ func (s *RoutingStore) Store(address string, name string, value *types.Routing) 
 	})
 }
 
-func (s *RoutingStore) Retrieve(address string, name string) (*types.Routing, error) {
-	key := []byte(fmt.Sprintf("routing:%s:%s", address, name))
+func (s *RoutingStore) Retrieve(name string) (*types.Routing, error) {
+	key := []byte(fmt.Sprintf("routing:%s", name))
 	var value []byte
 
 	err := s.store.db.View(func(txn *badger.Txn) error {
@@ -56,31 +54,30 @@ func (s *RoutingStore) Retrieve(address string, name string) (*types.Routing, er
 	}
 
 	parts := bytes.Split(value, []byte{0})
-	if len(parts) != 3 {
+	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid routing data format")
 	}
 
-	relaysStr := string(parts[2])
+	relaysStr := string(parts[1])
 
 	var relays = strings.Split(relaysStr, ",")
 
 	return &types.Routing{
-		Address:     string(parts[0]),
 		Domain:      name,
-		NostrNpub:   string(parts[1]),
+		NostrNpub:   string(parts[0]),
 		NostrRelays: relays,
 	}, nil
 }
 
-func (s *RoutingStore) Delete(address string, name string) error {
-	key := []byte(fmt.Sprintf("routing:%s:%s", address, name))
+func (s *RoutingStore) Delete(name string) error {
+	key := []byte(fmt.Sprintf("routing:%s", name))
 	return s.store.db.Update(func(txn *badger.Txn) error {
 		return txn.Delete(key)
 	})
 }
 
-func (s *RoutingStore) Has(address string, name string) (bool, error) {
-	key := []byte(fmt.Sprintf("routing:%s:%s", address, name))
+func (s *RoutingStore) Has(name string) (bool, error) {
+	key := []byte(fmt.Sprintf("routing:%s", name))
 	var exists bool
 
 	err := s.store.db.View(func(txn *badger.Txn) error {
