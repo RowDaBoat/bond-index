@@ -1,5 +1,5 @@
 #!/bin/bash
 
-set -e
+set -e  
 
 #TODO: Orphan routing should be ignored

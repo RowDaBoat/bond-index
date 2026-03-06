@@ -19,3 +19,4 @@ publication
 .DS_Store
 *.local
 *.local.*
+__pycache__
