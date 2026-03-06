@@ -29,7 +29,7 @@ type IndexUpdater struct {
 func NewIndexUpdater(ord service.Ord, btcNameStore service.BtcNameStore, routingStore service.RoutingStore, blockStore service.BlockStore, startBlock uint64, nonInteractive bool, noAutoIndex bool) *IndexUpdater {
 	processors := []core.InscriptionProcessor{
 		&core.BtcNameProcessor{Ord: ord, BtcNameStore: btcNameStore},
-		&core.RoutingProcessor{Ord: ord, RoutingStore: routingStore},
+		&core.RoutingProcessor{Ord: ord, RoutingStore: routingStore, BtcNameStore: btcNameStore},
 	}
 
 	return &IndexUpdater{

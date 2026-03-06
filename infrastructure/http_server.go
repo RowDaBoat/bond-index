@@ -24,7 +24,8 @@ func NewQueryHttpServer(nameResolver *actions.NameResolver) *QueryHttpServer {
 	}
 
 	router.GET("/health", func(c *gin.Context) { c.Status(http.StatusOK) })
-	router.GET("/name/:name", server.handleNameQuery)
+	router.GET("/resolve/:name", server.handleNameQuery)
+	router.GET("/name/:name", server.handleNameInfo)
 
 	return server
 }
@@ -40,6 +41,18 @@ func (s *QueryHttpServer) Start(address string) {
 func (s *QueryHttpServer) handleNameQuery(c *gin.Context) {
 	name := c.Param("name")
 	result, err := s.nameResolver.Resolve(name)
+
+	if err != nil {
+		HandleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+func (s *QueryHttpServer) handleNameInfo(c *gin.Context) {
+	name := c.Param("name")
+	result, err := s.nameResolver.Info(name)
 
 	if err != nil {
 		HandleError(c, err)

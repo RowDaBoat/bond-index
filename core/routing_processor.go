@@ -11,6 +11,7 @@ import (
 type RoutingProcessor struct {
 	Ord          service.Ord
 	RoutingStore service.RoutingStore
+	BtcNameStore service.BtcNameStore
 }
 
 func (p *RoutingProcessor) Process(inscription *types.Inscription) (string, error) {
@@ -39,32 +40,65 @@ func (p *RoutingProcessor) Process(inscription *types.Inscription) (string, erro
 		return "", nil
 	}
 
-	if !strings.HasSuffix(routingInscription.Name, ".btc") {
-		return "", nil
-	}
-
 	if len(inscription.Parents) == 0 {
 		return "", nil
 	}
 
 	parentId := inscription.Parents[0]
-	parentInscription, err := p.Ord.FetchInscription(parentId)
+	nameInscription, err := p.Ord.FetchInscription(parentId)
 	if err != nil {
 		// Network / API errors should be surfaced and retried.
 		return "", err
 	}
-	if parentInscription == nil {
+
+	if nameInscription == nil {
 		// If the parent cannot be found, ignore this routing inscription.
 		return "", nil
 	}
 
+	// Parent must be a valid btcname inscription (text/plain ending with .btc).
+	if !p.Ord.HasContentType(nameInscription, "text/plain") {
+		return "", nil
+	}
+
+	domainName, err := p.Ord.FetchContent(nameInscription.Id)
+	if err != nil {
+		// Network / API errors should be surfaced and retried.
+		return "", err
+	}
+
+	if !strings.HasSuffix(domainName, ".btc") {
+		// Parent is not a valid btcname inscription.
+		return "", nil
+	}
+
+	// Only accept routings whose parent inscription is the original
+	// btcname inscription for this domain. Duplicate btcname inscriptions
+	// should not have routings indexed.
+	btcName, err := p.BtcNameStore.Retrieve(domainName)
+	if err != nil {
+		// Storage errors should be surfaced and retried.
+		return "", err
+	}
+
+	if btcName == nil {
+		// No canonical btcname recorded for this domain; ignore routing.
+		return "", nil
+	}
+
+	if btcName.Id != nameInscription.Id {
+		// Parent is not the original name inscription; ignore routing.
+		return "", nil
+	}
+
 	routing := &types.Routing{
-		Domain:      routingInscription.Name,
+		Id:          inscription.Id,
+		Domain:      domainName,
 		NostrNpub:   routingInscription.NostrNpub,
 		NostrRelays: routingInscription.NostrRelays,
 	}
 
-	if err := p.RoutingStore.Store(routing.Domain, routing); err != nil {
+	if err := p.RoutingStore.Store(domainName, routing); err != nil {
 		return "", err
 	}
 

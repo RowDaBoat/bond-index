@@ -15,6 +15,11 @@ type NameResolution struct {
 	NostrRelays []string `json:"nostr_relays"`
 }
 
+type NameInfo struct {
+	Domain    string `json:"domain"`
+	OrdinalId string `json:"ordinal_id"`
+}
+
 func NewNameResolver(btcNameStore service.BtcNameStore, routingStore service.RoutingStore) *NameResolver {
 	return &NameResolver{
 		btcNameStore: btcNameStore,
@@ -44,5 +49,25 @@ func (nr *NameResolver) Resolve(name string) (*NameResolution, error) {
 	return &NameResolution{
 		NostrNpub:   routing.NostrNpub,
 		NostrRelays: routing.NostrRelays,
+	}, nil
+}
+
+func (nr *NameResolver) Info(name string) (*NameInfo, error) {
+	if name == "" {
+		return nil, types.ErrNameRequired
+	}
+
+	btcName, err := nr.btcNameStore.Retrieve(name)
+	if err != nil {
+		return nil, types.ErrNameNotFound
+	}
+
+	if btcName == nil {
+		return nil, types.ErrNameNotFound
+	}
+
+	return &NameInfo{
+		Domain:    btcName.Domain,
+		OrdinalId: btcName.Id,
 	}, nil
 }

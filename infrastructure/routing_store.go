@@ -24,6 +24,8 @@ func (s *RoutingStore) Store(name string, value *types.Routing) error {
 	key := []byte(fmt.Sprintf("routing:%s", name))
 
 	valueBytes := make([]byte, 0)
+	valueBytes = append(valueBytes, []byte(value.Id)...)
+	valueBytes = append(valueBytes, 0)
 	valueBytes = append(valueBytes, []byte(value.NostrNpub)...)
 	valueBytes = append(valueBytes, 0)
 	relaysJoined := strings.Join(value.NostrRelays, ",")
@@ -54,17 +56,18 @@ func (s *RoutingStore) Retrieve(name string) (*types.Routing, error) {
 	}
 
 	parts := bytes.Split(value, []byte{0})
-	if len(parts) != 2 {
+	if len(parts) != 3 {
 		return nil, fmt.Errorf("invalid routing data format")
 	}
 
-	relaysStr := string(parts[1])
+	relaysStr := string(parts[2])
 
 	var relays = strings.Split(relaysStr, ",")
 
 	return &types.Routing{
+		Id:          string(parts[0]),
 		Domain:      name,
-		NostrNpub:   string(parts[0]),
+		NostrNpub:   string(parts[1]),
 		NostrRelays: relays,
 	}, nil
 }

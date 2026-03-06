@@ -23,7 +23,7 @@ ord_sync
 
 ROUTING_FILE="$TEST_DIR/routing.json"
 cat > "$ROUTING_FILE" <<EOF
-{"p":"btcname","op":"routing","name":"test.btc","nostr_npub":"npub1testpubkey","nostr_relays":["wss://relay.example.com"]}
+{"p":"btcname","op":"routing","nostr_npub":"npub1testpubkey","nostr_relays":["wss://relay.example.com"]}
 EOF
 ord_wallet inscribe --fee-rate 1 --no-backup --parent "$NAME_INSCRIPTION_ID"  --file "$ROUTING_FILE" &>$LOG_ORD
 #ord_wallet inscribe --fee-rate 1 --no-backup --destination "$NAME_ADDRESS" --file "$ROUTING_FILE" &>$LOG_ORD
@@ -32,7 +32,7 @@ mine 7 "$WALLET_ADDRESS"
 ord_sync
 bond_sync
 
-response=$(bond_client "/name/test.btc")
+response=$(bond_client "/resolve/test.btc")
 assert_equals "routing returns expected nostr npub" "npub1testpubkey" "$(echo "$response" | jq -r '.nostr_npub')"
 assert_equals "routing returns expected relay" "wss://relay.example.com" "$(echo "$response" | jq -r '.nostr_relays[0]')"
 
