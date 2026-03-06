@@ -4,6 +4,8 @@ import signal
 import subprocess
 import tempfile
 import time
+import json
+
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Callable, Iterable, List, Optional
@@ -17,16 +19,6 @@ BOND_PORT = int(os.environ.get("BOND_PORT", "8080"))
 
 
 class TestEnvironment:
-    """
-    Python port of test_setup.sh.
-
-    Usage:
-
-        with TestEnvironment() as env:
-            env.start_services()
-            # use env.bitcoin_cli, env.ord_wallet, env.bond_client, env.mine, env.ord_sync, ...
-    """
-
     def __init__(self, debug: bool = False, debug_bitcoind: bool = False, debug_ord: bool = False, debug_bond: bool = False):
         self._tempdir = tempfile.mkdtemp()
         self.test_dir = Path(self._tempdir)
@@ -90,15 +82,26 @@ class TestEnvironment:
         self._run(cmd, stdout=self._log_ord, stderr=self._log_ord)
         return ""
 
-    def ord_inscribe(self, file_path, capture_output: bool = False) -> str:
-        base_args = (
+    def ord_inscribe(
+        self,
+        file_path,
+        *,
+        destination: Optional[str] = None,
+        parent: Optional[str] = None,
+        capture_output: bool = False,
+    ) -> str:
+        base_args = [
             "inscribe",
             "--fee-rate",
             "1",
             "--no-backup",
             "--file",
             str(file_path),
-        )
+        ]
+        if destination is not None:
+            base_args.extend(["--destination", destination])
+        if parent is not None:
+            base_args.extend(["--parent", parent])
         return self.ord_wallet(*base_args, capture_output=capture_output)
 
     def bond_client(self, path: str, capture_output: bool = True) -> str:
@@ -148,6 +151,26 @@ class TestEnvironment:
                 pass
             time.sleep(1)
         raise RuntimeError(f"ord failed to sync to block {height} within {timeout} seconds")
+
+    def mine_and_sync(self, blocks: int = 1) -> None:
+        self.mine(blocks)
+        self.ord_sync()
+        self.bond_sync()
+
+    # ----------------------------
+    # Wallet setup
+    # ----------------------------
+
+    def _setup_wallet(self) -> None:
+        # Create and fund wallet once per environment
+        self.ord_wallet("create")
+        receive_out = self.ord_wallet("receive", capture_output=True)
+
+        receive_data = json.loads(receive_out)
+        wallet_address = receive_data["addresses"][0]
+
+        self.mine(101, wallet_address)
+        self.ord_sync()
 
     # ----------------------------
     # Assertions
@@ -333,6 +356,7 @@ def test_environment(*args, **kwargs):
     env = TestEnvironment(*args, **kwargs)
     try:
         env.start_services()
+        env._setup_wallet()
         yield env
     finally:
         env.cleanup()

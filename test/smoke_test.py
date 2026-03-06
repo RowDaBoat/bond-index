@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
-from test_setup import test_environment, ORD_PORT
 import urllib.request
+from test_setup import test_environment, ORD_PORT
 
 
-with test_environment() as env:
-    print("Smoke test: services started and responding")
-    print()
+def smoke_test(env) -> None:
+    print("Basic health checks for bitcoind, ord, and bond.")
 
     # bitcoind
     env.assert_success(
@@ -29,5 +28,7 @@ with test_environment() as env:
 
     env.assert_success("bond health endpoint is reachable", check_bond_health)
 
-    print()
-    print("All smoke test assertions passed.")
+
+if __name__ == "__main__":
+    with test_environment() as env:
+        smoke_test(env)

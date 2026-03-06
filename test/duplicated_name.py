@@ -6,28 +6,17 @@ from test_setup import test_environment
 
 
 def duplicated_name(env) -> None:
-    print("Duplicated names should be ignored.")
-
-    # Create and fund wallet
-    env.ord_wallet("create")
-    receive_out = env.ord_wallet("receive", capture_output=True)
-    receive_data = json.loads(receive_out)
-    wallet_address = receive_data["addresses"][0]
-
-    env.mine(101, wallet_address)
-    env.ord_sync()
+    print("Duplicated name inscriptions should be ignored.")
 
     # First btcname inscription for the same domain
-    domain = "dup.btc"
+    domain = "dupname.btc"
     name_file = env.test_dir / "name.txt"
     name_file.write_text(domain)
 
     first_inscribe_out = env.ord_inscribe(name_file, capture_output=True)
     first_id = json.loads(first_inscribe_out)["inscriptions"][0]["id"]
 
-    env.mine(7, wallet_address)
-    env.ord_sync()
-    env.bond_sync()
+    env.mine_and_sync(7)
 
     # Verify name metadata reflects the first inscription
     name_response = env.bond_client(f"/name/{domain}", capture_output=True)
@@ -49,9 +38,7 @@ def duplicated_name(env) -> None:
     second_inscribe_out = env.ord_inscribe(name_file, capture_output=True)
     second_id = json.loads(second_inscribe_out)["inscriptions"][0]["id"]
 
-    env.mine(7, wallet_address)
-    env.ord_sync()
-    env.bond_sync()
+    env.mine_and_sync(7)
 
     # Verify duplicated name is ignored and first ordinal id is still used
     name_response = env.bond_client(f"/name/{domain}", capture_output=True)
@@ -62,8 +49,6 @@ def duplicated_name(env) -> None:
         first_id,
         name_data["ordinal_id"],
     )
-
-    print("All assertions passed.")
 
 
 if __name__ == "__main__":
